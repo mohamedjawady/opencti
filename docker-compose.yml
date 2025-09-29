@@ -37,6 +37,10 @@ services:
       - logger.org.elasticsearch.discovery="ERROR"
       - "ES_JAVA_OPTS=-Xms${ELASTIC_MEMORY_SIZE} -Xmx${ELASTIC_MEMORY_SIZE}"
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 6G
     ulimits:
       memlock:
         soft: -1
