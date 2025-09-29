@@ -261,6 +261,50 @@ services:
       rabbitmq:
         condition: service_healthy
     restart: always
+  misp-db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=${MISP_DB_NAME}
+      - MYSQL_USER=${MISP_DB_USER}
+      - MYSQL_PASSWORD=${MISP_DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MISP_DB_ROOT_PASSWORD}
+    volumes:
+      - misp-db-data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MISP_DB_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  misp:
+    image: coolacid/misp-docker:core-latest
+    depends_on:
+      misp-db:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - misp-data:/var/www/MISP
+    environment:
+      - MYSQL_HOST=misp-db
+      - MYSQL_DATABASE=${MISP_DB_NAME}
+      - MYSQL_USER=${MISP_DB_USER}
+      - MYSQL_PASSWORD=${MISP_DB_PASSWORD}
+      - MISP_ADMIN_EMAIL=${MISP_ADMIN_EMAIL}
+      - MISP_ADMIN_PASSPHRASE=${MISP_ADMIN_PASSWORD}
+      - MISP_BASEURL=${MISP_BASE_URL}
+      - TIMEZONE=${MISP_TIMEZONE}
+      - "INIT=true"
+      - "CRON_USER_ID=1"
+      - "REDIS_FQDN=redis"
+      - "HOSTNAME=https://${MISP_BASE_URL}"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   esdata:
@@ -268,3 +312,5 @@ volumes:
   redisdata:
   amqpdata:
   rsakeys:
+  misp-data:
+  misp-db-data:
